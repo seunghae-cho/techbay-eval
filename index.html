@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>테크베이 팀원 인사 평가</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f5f5f5; color:#222; }
+
+  /* ── Header ── */
+  .header { background:#fff; border-bottom:2px solid #222; padding:28px 40px 20px; display:flex; align-items:flex-end; justify-content:space-between; }
+  .header-left {}
+  .header h1 { font-size:14px; color:#888; font-weight:400; margin-bottom:4px; }
+  .header h2 { font-size:22px; font-weight:700; }
+  .header-right { display:flex; gap:10px; align-items:center; }
+
+  /* ── Period Selector ── */
+  .period-selector { position:relative; display:inline-block; }
+  .period-current { display:inline-flex; align-items:center; gap:6px; cursor:pointer; border-bottom:1px dashed #aaa; padding-bottom:1px; }
+  .period-current:hover { color:#1565C0; border-color:#1565C0; }
+  .period-current svg { width:14px; height:14px; transition:transform .2s; }
+  .period-dropdown { display:none; position:absolute; top:calc(100% + 8px); left:0; background:#fff; border:1px solid #ddd; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:100; min-width:180px; overflow:hidden; }
+  .period-dropdown.show { display:block; }
+  .period-item { display:block; width:100%; padding:10px 16px; border:none; background:none; text-align:left; font-size:14px; cursor:pointer; font-family:inherit; color:#333; }
+  .period-item:hover { background:#f5f5f5; }
+  .period-item.active { background:#FFF9C4; font-weight:600; }
+
+  /* ── Layout ── */
+  .container { display:flex; min-height:calc(100vh - 90px); }
+
+  /* ── Left Nav ── */
+  .nav { width:260px; min-width:260px; background:#fff; border-right:1px solid #e0e0e0; padding:24px 0; overflow-y:auto; }
+  .part-group { margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid #eee; }
+  .part-group:last-of-type { border-bottom:none; }
+  .part-label { font-size:13px; font-weight:700; color:#333; padding:12px 20px 8px; letter-spacing:0.5px; }
+  .team-btn { display:flex; align-items:center; width:100%; padding:10px 20px; border:none; background:none; cursor:pointer; font-size:14px; text-align:left; color:#333; transition:background .15s; font-family:inherit; }
+  .team-btn:hover { background:#f0f0f0; }
+  .team-btn.active { background:#FFF9C4; font-weight:600; }
+  .team-btn.no-form { color:#aaa; }
+
+  /* ── Main Content ── */
+  .main { flex:1; padding:32px 40px; }
+  .main-empty { display:flex; align-items:center; justify-content:center; height:100%; color:#aaa; font-size:15px; }
+
+  /* ── Team Header ── */
+  .team-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
+  .team-header h3 { font-size:18px; font-weight:700; }
+  .team-header .subtitle { font-size:13px; color:#888; margin-left:12px; }
+
+  /* ── Employee Table ── */
+  .emp-table { width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .emp-table thead th { background:#fafafa; font-size:12px; font-weight:600; color:#666; padding:12px 16px; text-align:left; border-bottom:1px solid #e8e8e8; white-space:nowrap; }
+  .emp-table tbody td { padding:12px 16px; border-bottom:1px solid #f0f0f0; font-size:14px; vertical-align:middle; white-space:nowrap; }
+  .emp-table tbody tr:last-child td { border-bottom:none; }
+  .emp-table tbody tr:hover { background:#fafafa; }
+
+  .btn { padding:6px 16px; border-radius:6px; border:1px solid #ddd; background:#fff; cursor:pointer; font-size:13px; transition:all .15s; font-family:inherit; white-space:nowrap; }
+  .btn:hover { background:#f5f5f5; }
+  .btn-primary { background:#222; color:#fff; border-color:#222; }
+  .btn-primary:hover { background:#444; }
+  .btn-edit { background:#fff; color:#555; }
+  .btn-disabled { background:#f5f5f5; color:#ccc; border-color:#eee; cursor:not-allowed; }
+  .btn-outline { background:#fff; color:#333; border:1px solid #ccc; }
+  .btn-outline:hover { background:#f0f0f0; }
+  .btn-small { padding:5px 12px; font-size:12px; }
+  .btn-hr { background:#fff; color:#555; border:1px solid #aaa; font-weight:500; }
+  .btn-hr:hover { background:#f0f0f0; color:#333; border-color:#888; }
+
+  .status-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 12px; border-radius:12px; font-size:12px; font-weight:500; white-space:nowrap; }
+  .status-done { background:#E8F5E9; color:#2E7D32; }
+  .status-pending { background:#f5f5f5; color:#aaa; }
+
+  /* ── Footer ── */
+  .footer-link { margin-top:32px; text-align:center; }
+  .footer-link a { color:#1565C0; font-size:14px; text-decoration:none; font-weight:500; cursor:pointer; }
+  .footer-link a:hover { text-decoration:underline; }
+  .footer-notice { text-align:center; margin-top:12px; font-size:12px; color:#aaa; }
+
+  /* ── Modal ── */
+  .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.45); z-index:1000; justify-content:center; align-items:flex-start; padding-top:40px; overflow-y:auto; }
+  .modal-overlay.show { display:flex; }
+  .modal { background:#fff; border-radius:12px; width:680px; max-width:95vw; max-height:90vh; overflow-y:auto; padding:32px; box-shadow:0 20px 60px rgba(0,0,0,.2); position:relative; }
+  .modal h3 { font-size:18px; font-weight:700; margin-bottom:4px; }
+  .modal .modal-sub { font-size:13px; color:#888; margin-bottom:24px; }
+
+  /* Form */
+  .form-section { margin-bottom:36px; }
+  .form-section-title { font-size:14px; font-weight:700; color:#333; margin-bottom:16px; padding-bottom:10px; border-bottom:2px solid #e0e0e0; }
+  .form-group { margin-bottom:20px; }
+  .form-label { display:block; font-size:13px; color:#333; margin-bottom:8px; line-height:1.5; }
+  .form-label .q-num { display:inline-block; background:#f0f0f0; color:#555; width:22px; height:22px; text-align:center; line-height:22px; border-radius:4px; font-size:11px; font-weight:700; margin-right:6px; }
+
+  .score-group { display:flex; gap:8px; }
+  .score-btn { width:44px; height:36px; border:1px solid #ddd; border-radius:6px; background:#fff; cursor:pointer; font-size:14px; font-weight:500; transition:all .15s; font-family:inherit; }
+  .score-btn:hover { border-color:#888; }
+  .score-btn.selected { background:#222; color:#fff; border-color:#222; }
+
+  /* ── Grade Criteria Tables ── */
+  .grade-criteria { width:100%; border-collapse:collapse; margin-bottom:16px; font-size:13px; border:1px solid #ccc; }
+  .grade-criteria th { background:#4A9FE5; color:#fff; padding:12px 10px; font-weight:700; text-align:center; border:1px solid #3d8fd4; font-size:14px; }
+  .grade-criteria td { padding:12px 10px; text-align:center; border:1px solid #ddd; color:#333; line-height:1.5; }
+  .grade-criteria td:first-child { font-weight:700; background:#fafafa; }
+  .grade-criteria .gc-s { background:#E3F2FD; color:#1565C0; border-color:#E3F2FD; }
+
+  .grade-detail { width:100%; border-collapse:collapse; margin-bottom:20px; font-size:13px; border:1px solid #ccc; }
+  .grade-detail th { background:#4A9FE5; color:#fff; padding:12px 14px; font-weight:700; border:1px solid #3d8fd4; white-space:nowrap; }
+  .grade-detail td { padding:14px; border:1px solid #ddd; vertical-align:middle; line-height:1.6; }
+  .grade-detail td:first-child { text-align:center; font-size:18px; font-weight:800; background:#E3F2FD; color:#1565C0; width:70px; }
+  .grade-detail td:nth-child(2) { text-align:center; font-weight:600; width:200px; }
+
+  .grade-group { display:flex; gap:8px; flex-wrap:wrap; }
+  .grade-btn { padding:8px 20px; border:1px solid #ddd; border-radius:6px; background:#fff; cursor:pointer; font-size:14px; font-weight:600; transition:all .15s; font-family:inherit; }
+  .grade-btn:hover { border-color:#888; }
+  .grade-btn.selected { border-color:#222; }
+  .grade-btn.selected[data-grade="S"] { background:#1565C0; color:#fff; border-color:#1565C0; }
+  .grade-btn.selected[data-grade="A"] { background:#2E7D32; color:#fff; border-color:#2E7D32; }
+  .grade-btn.selected[data-grade="B"] { background:#F9A825; color:#fff; border-color:#F9A825; }
+  .grade-btn.selected[data-grade="C"] { background:#E65100; color:#fff; border-color:#E65100; }
+  .grade-btn.selected[data-grade="D"] { background:#C62828; color:#fff; border-color:#C62828; }
+
+  .form-textarea { width:100%; min-height:80px; border:1px solid #ddd; border-radius:8px; padding:12px; font-size:14px; font-family:inherit; resize:vertical; }
+  .form-textarea:focus { outline:none; border-color:#888; }
+
+  .form-actions { display:flex; gap:12px; justify-content:flex-end; margin-top:24px; padding-top:20px; border-top:1px solid #eee; }
+  .btn-submit { padding:10px 32px; font-size:14px; font-weight:600; }
+
+  /* ── History View ── */
+  .history-card { background:#fff; border-radius:8px; padding:20px 24px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .history-card .hc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .history-card .hc-name { font-size:16px; font-weight:700; }
+  .history-card .hc-team { font-size:12px; color:#888; }
+  .history-card .hc-grade { font-size:14px; font-weight:700; padding:4px 14px; border-radius:6px; }
+  .history-card .hc-scores { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:8px; }
+  .history-card .hc-score-item { font-size:12px; color:#555; }
+  .history-card .hc-score-item span { font-weight:700; color:#222; }
+  .history-card .hc-comment { font-size:13px; color:#555; line-height:1.6; background:#fafafa; padding:10px 14px; border-radius:6px; margin-top:8px; }
+  .history-card .hc-time { font-size:11px; color:#bbb; margin-top:8px; }
+
+  .back-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border:1px solid #ddd; border-radius:6px; background:#fff; cursor:pointer; font-size:13px; margin-bottom:20px; font-family:inherit; }
+  .back-btn:hover { background:#f5f5f5; }
+
+  .filter-bar { display:flex; gap:12px; margin-bottom:20px; align-items:center; }
+  .filter-bar select { padding:8px 12px; border:1px solid #ddd; border-radius:6px; font-size:13px; background:#fff; font-family:inherit; }
+  .history-empty { text-align:center; padding:60px; color:#aaa; }
+
+  .grade-S { background:#E3F2FD; color:#1565C0; }
+  .grade-A { background:#E8F5E9; color:#2E7D32; }
+  .grade-B { background:#FFF8E1; color:#F57F17; }
+  .grade-C { background:#FFF3E0; color:#E65100; }
+  .grade-D { background:#FFEBEE; color:#C62828; }
+
+  /* ── Password Modal ── */
+  .pw-modal { background:#fff; border-radius:12px; width:380px; max-width:90vw; padding:32px; box-shadow:0 20px 60px rgba(0,0,0,.2); text-align:center; }
+  .pw-modal h3 { font-size:16px; font-weight:700; margin-bottom:8px; }
+  .pw-modal p { font-size:13px; color:#888; margin-bottom:20px; }
+  .pw-input { width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:8px; font-size:14px; font-family:inherit; text-align:center; }
+  .pw-input:focus { outline:none; border-color:#888; }
+  .pw-error { color:#C62828; font-size:12px; margin-top:8px; display:none; }
+
+  /* ── Upload Modal ── */
+  .upload-modal { background:#fff; border-radius:12px; width:560px; max-width:95vw; padding:32px; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+  .upload-modal h3 { font-size:16px; font-weight:700; margin-bottom:8px; }
+  .upload-modal p { font-size:13px; color:#888; margin-bottom:20px; line-height:1.6; }
+  .upload-area { border:2px dashed #ddd; border-radius:8px; padding:32px; text-align:center; cursor:pointer; transition:border-color .2s; margin-bottom:16px; }
+  .upload-area:hover { border-color:#888; }
+  .upload-area.dragover { border-color:#1565C0; background:#E3F2FD; }
+  .upload-preview { max-height:300px; overflow-y:auto; margin-bottom:16px; }
+  .upload-preview table { width:100%; border-collapse:collapse; font-size:13px; }
+  .upload-preview th { background:#fafafa; padding:8px 12px; text-align:left; border-bottom:1px solid #eee; font-weight:600; color:#666; }
+  .upload-preview td { padding:8px 12px; border-bottom:1px solid #f5f5f5; }
+
+  /* Toast */
+  .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:12px 28px; border-radius:8px; font-size:14px; z-index:2000; opacity:0; transition:opacity .3s; pointer-events:none; font-family:inherit; }
+  .toast.show { opacity:1; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn.loading { pointer-events:none; opacity:.6; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>
+      <div class="period-selector">
+        <span class="period-current" onclick="togglePeriodDropdown()">
+          <span id="periodLabel"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </span>
+        <div class="period-dropdown" id="periodDropdown"></div>
+      </div>
+    </h1>
+    <h2>테크베이 팀원 인사 평가</h2>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-hr btn-small" onclick="openUploadModal()">대상자 명단 업로드 (HR)</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="nav" id="nav"></div>
+  <div class="main" id="main">
+    <div class="main-empty">왼쪽에서 팀을 선택해주세요</div>
+  </div>
+</div>
+
+<!-- Evaluation Form Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<!-- Password Modal -->
+<div class="modal-overlay" id="pwOverlay">
+  <div class="pw-modal">
+    <h3>비밀번호 입력</h3>
+    <p>제출 내역 조회는 HR 담당자만 접근할 수 있습니다.</p>
+    <input type="password" class="pw-input" id="pwInput" placeholder="비밀번호를 입력해주세요" onkeydown="if(event.key==='Enter')checkPassword()">
+    <div class="pw-error" id="pwError">비밀번호가 일치하지 않습니다.</div>
+    <div class="form-actions" style="justify-content:center; border:none; padding-top:16px;">
+      <button class="btn" onclick="closePwModal()">취소</button>
+      <button class="btn btn-primary" onclick="checkPassword()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-overlay" id="uploadOverlay">
+  <div class="upload-modal" id="uploadModal"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════
+
+const HR_PASSWORD = "0104";
+
+const PERIODS = [
+  { id: "2601", label: "26년 01월" },
+  { id: "2607", label: "26년 07월" }
+];
+
+let currentPeriod = PERIODS[PERIODS.length - 1]; // 최신 시점으로 시작
+
+const COMMON_QUESTIONS = [
+  "당일 연차나 무단 결근을 한 적이 없는가?",
+  "주어진 작업에 충실하며, 여유가 있더라도 팀에 도움이 될 일거리를 찾아내는가?",
+  "리더의 지시사항을 언제나 준수하는가?",
+  "상대방이 한 번에 이해할 수 있도록 배경과 맥락을 충분히 잘 설명하는가?",
+  "태도가 근면하며, 팀에 적극적으로 헌신하는가?"
+];
+
+const COMMON_LABELS = ["근태", "적극성", "팔로워쉽", "커뮤니케이션", "헌신"];
+
+const TEAMS = {
+  "스튜디오팀(촬영)": {
+    part: "인증파트",
+    questions: [
+      "일관된 자세와 구도를 유지하여 다음 컷을 빠르게 촬영하는가?",
+      "규정된 촬영 기준점 (높이, 각도, 카메라 세팅값 등)을 인지하고 있는가?",
+      "개별 디테일컷 컬러 톤을 동일하게 맞추는가?",
+      "누락되는 컷 없이 지정된 촬영 사진 장수를 정확히 맞추는가?",
+      "고지사항을 놓치지 않고 모두 촬영하는가?"
+    ],
+    employees: ["홍길동"]
+  },
+  "스튜디오팀(운영)": {
+    part: "인증파트",
+    questions: [
+      "누락되는 컷이 없는지 매우 꼼꼼히 확인하는가?",
+      "차량 상태에 이슈가 있을 때 재촬영이 필요한지 신속히 파악하는가?",
+      "스튜디오 운영에 적합한 커뮤니케이션 역량을 가지고 있는가?"
+    ],
+    employees: ["홍길동"]
+  },
+  "디테일링팀": {
+    part: "인증파트",
+    questions: [
+      "디테일링 작업에 대한 검수가 능숙하며, 상품화 미비사항이 발견됐을 때 재상품화 여부를 결정할 수 있는가?",
+      "차량 컨디션과 연식 등의 상황을 고려하여 적정 수준의 작업량을 결정하는가?",
+      "필요 이상으로 과도한 작업을 하지 않으며, 작업의 강약을 조절하는가?",
+      "디테일링 작업에 적합한 재료와 도구를 선정할 수준의 이해력이 있는가?",
+      "차량에 스크래치가 나지 않도록, 안전하게 작업을 진행하는가?",
+      "디테일 일일 작업량을 맞출 수 있을 만큼 (또는 뛰어넘을 정도로) 충실히 진행하는가?"
+    ],
+    employees: ["홍길동"]
+  },
+  "디테일링팀(QC)": {
+    part: "인증파트",
+    questions: [
+      "디테일링 작업에 대한 검수가 능숙하며, 상품화 미비사항이 발견됐을 때 재상품화 여부를 결정할 수 있는가?",
+      "차량 컨디션과 연식 등의 상황을 고려하여 적정 수준의 작업량을 결정하는가?",
+      "필요 이상으로 과도한 작업을 하지 않으며, 작업의 강약을 조절하는가?",
+      "디테일링 작업에 적합한 재료와 도구를 선정할 수준의 이해력이 있는가?",
+      "차량에 스크래치가 나지 않도록, 안전하게 작업을 진행하는가?",
+      "디테일 일일 작업량을 맞출 수 있을 만큼 (또는 뛰어넘을 정도로) 충실히 진행하는가?"
+    ],
+    employees: ["홍길동"]
+  },
+  "출고팀": {
+    part: "판매파트",
+    questions: [
+      "미비한 검수 사항을 빠르고 정확하게 발견하는가?",
+      "최상의 상품화 상태가 되도록 외관, 실내 세정 작업을 충실히 하는가?",
+      "유관 부서에서 요청한 차량 관련 문의사항을 정확히 파악하고, 신속히 답변하는가?",
+      "검수 시간을 빈틈 없이 메우려고 하며, 정해진 대수가 끝나더라도 다른 작업을 찾는가?"
+    ],
+    employees: ["홍길동"]
+  },
+  "인프라팀": {
+    part: "인프라파트",
+    questions: [
+      "다양한 외/내부 이해관계자와 명확하면서도 부드럽게 소통할 수 있는가?",
+      "협의 과정을 영리하게 이끌어, 보다 유리하거나 높은 조건을 교섭할 수 있는가?",
+      "프로젝트 타임라인을 비즈니스 속도에 맞출 수 있는가?",
+      "유관 이슈를 신속하게 대응하고 해결할 수 있는가?",
+      "우선순위에 맞게 다수 프로젝트를 꼼꼼히 관리할 수 있는가?"
+    ],
+    employees: ["홍길동"]
+  },
+  "UDTT정비팀": {
+    part: "인프라파트",
+    questions: null,
+    employees: ["홍길동"]
+  },
+  "진단팀(리프트)": {
+    part: "생산파트",
+    questions: [
+      "풍부한 자동차 지식(옵션/부품)을 갖추고 있는가?",
+      "차량의 현재 상태와 판매 가격대를 고려하여 적정 수준의 상품화를 결정하는가?",
+      "안전수칙을 모두 준수하는가?\n(진단 리프트 하강시 사람 확인, 차량 이동시 과속 금지 등)",
+      "재상품화 요청이 발생하지 않도록, 어드민에서 상품화 분류 기준에 맞게 정확히 입력하는가?",
+      "차량 또는 리프트 이동에 소요되는 시간에도 추가 진단을 통해 작업 효율을 높이는가?"
+    ],
+    employees: ["홍길동"]
+  },
+  "진단팀(옵션)": {
+    part: "생산파트",
+    questions: [
+      "차량 주요 옵션별 기능 작동 방식을 정확히 알고 있는가?",
+      "동일 차종간에도 옵션 차이를 명확히 인지하고 있는가?",
+      "옵션 기능 이상 여부를 빠르고 효율적으로 진단하는가?"
+    ],
+    employees: ["홍길동"]
+  },
+  "관제팀(BO)": {
+    part: "생산파트",
+    questions: [
+      "차량 부품 명칭을 정확히 알고 있는가?",
+      "성능지에 대한 지식을 갖추고 있는가?",
+      "관제 이슈를 적시에 팀에 신속히 전파하는가?",
+      "관제 이슈 상황을 충분히 이해하여 대응책을 준비할 수 있는가?",
+      "중복 작업 상황이 발생하지 않도록, 상품화 접수 진행 과정을 정확히 어드민에 표기하는가?"
+    ],
+    employees: ["홍길동"]
+  },
+  "관제팀(FD)": {
+    part: "생산파트",
+    questions: [
+      "차량 기본 옵션에 대한 이해도가 높은가?",
+      "팀 내 규정된 프로세스가 지켜지지 않은 상황 혹은 변수가 생겼을 때 팀에 공유하는가?",
+      "이동 작업 간의 거리를 효율적으로 고려하여, 작업을 배분 받는가?",
+      "항상 교통 안전을 준수하는가? (보행자 주의, 차간거리 확보, 제한속도 준수)"
+    ],
+    employees: ["홍길동"]
+  },
+  "관제팀(OQC)": {
+    part: "생산파트",
+    questions: [
+      "풍부한 자동차 지식을 갖추고 있는가?",
+      "차량의 주요 옵션별 기능 작동 방식을 정확히 알고 있는가?",
+      "상품화 완료된 차량 검수 과정에서 추가 상품화 또는 재상품화가 발견됐을 때, 적절한 수준의 상품화를 결정할 수 있는가?",
+      "차량이 다음 공정(디테일링, 스튜디오, PDI)로 넘어갔을 때 추가/재상품화가 발생하지 않도록 누락 없이 검수하는가?"
+    ],
+    employees: ["홍길동"]
+  }
+};
+
+const PART_ORDER = ["인증파트", "판매파트", "인프라파트", "생산파트"];
+const GRADES = ["S", "A", "B", "C", "D"];
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+
+// ★★★ 아래 URL을 Apps Script 배포 URL로 교체하세요 ★★★
+const API_URL = 'https://script.google.com/macros/s/AKfycbz8R-FfYr43rGpPlMYoasfDIW6f1mn8c-PgaASgUaDCqhoGEMyoKr5r4ONq48HpdLdm/exec';
+
+let submissions = {};
+let renewals = {};
+let currentTeam = null;
+let hrAuthenticated = false;
+let isLoading = false;
+
+// ─── API 호출 유틸 ───
+
+async function apiGet(action, period) {
+  const url = `${API_URL}?action=${action}&period=${period || currentPeriod.id}`;
+  const res = await fetch(url);
+  return res.json();
+}
+
+async function apiPost(data) {
+  data.period = data.period || currentPeriod.id;
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+  return res.json();
+}
+
+// ─── 로딩 표시 ───
+
+function showLoading(msg) {
+  isLoading = true;
+  const main = document.getElementById('main');
+  main.innerHTML = `<div class="main-empty" style="flex-direction:column; gap:12px;">
+    <div style="width:28px; height:28px; border:3px solid #ddd; border-top-color:#222; border-radius:50%; animation:spin .8s linear infinite;"></div>
+    <span>${msg || '불러오는 중...'}</span>
+  </div>`;
+}
+
+// ─── 데이터 로드 ───
+
+async function loadPeriodData() {
+  showLoading('데이터 불러오는 중...');
+
+  try {
+    // 제출 데이터 + 대상자 명단 동시 조회
+    const [subData, empData] = await Promise.all([
+      apiGet('getSubmissions'),
+      apiGet('getEmployees')
+    ]);
+
+    submissions = subData || {};
+    renewals = empData.renewals || {};
+
+    // 팀 기본값 복원
+    Object.keys(TEAMS).forEach(key => {
+      TEAMS[key].employees = ["홍길동"];
+    });
+
+    // 서버에서 받은 대상자 명단 적용
+    const employees = empData.employees || {};
+    Object.keys(employees).forEach(team => {
+      if (TEAMS[team]) {
+        TEAMS[team].employees = employees[team];
+      }
+    });
+  } catch (err) {
+    console.error('데이터 로드 실패:', err);
+    showToast('데이터를 불러오지 못했습니다. 새로고침 해주세요.');
+  }
+
+  isLoading = false;
+}
+
+// 저장 함수들 (서버에 POST)
+async function saveSubmission(teamName, empName, payload) {
+  return apiPost({ action: 'submitEval', payload });
+}
+
+async function deleteSubmission(teamName, empName) {
+  return apiPost({ action: 'deleteEval', team: teamName, employee: empName });
+}
+
+async function saveEmployeesToServer(employeeList) {
+  return apiPost({ action: 'uploadEmployees', payload: employeeList });
+}
+
+async function deleteEmployeeFromServer(teamName, empName) {
+  return apiPost({ action: 'deleteEmployee', team: teamName, employee: empName });
+}
+
+function getKey(team, emp) { return `${team}::${emp}`; }
+
+// ══════════════════════════════════════════════
+// RENDER NAV
+// ══════════════════════════════════════════════
+
+function renderNav() {
+  const nav = document.getElementById('nav');
+  let html = '';
+
+  PART_ORDER.forEach(part => {
+    const teamsInPart = Object.entries(TEAMS).filter(([_, d]) => d.part === part);
+    if (teamsInPart.length === 0) return;
+
+    html += `<div class="part-group">`;
+    html += `<div class="part-label">${part}</div>`;
+
+    teamsInPart.forEach(([name, data]) => {
+      const isActive = currentTeam === name;
+      const noForm = !data.questions;
+
+      html += `<button class="team-btn ${isActive ? 'active' : ''} ${noForm ? 'no-form' : ''}"
+                onclick="selectTeam('${name}')">
+        <span>${name}${noForm ? ' <span style="font-size:11px;color:#ccc;">(준비중)</span>' : ''}</span>
+      </button>`;
+    });
+
+    html += `</div>`;
+  });
+
+  html += `<div style="padding:16px 20px; border-top:1px solid #eee; margin-top:8px;"></div>`;
+
+  nav.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════
+// RENDER TEAM VIEW
+// ══════════════════════════════════════════════
+
+function selectTeam(name) {
+  currentTeam = name;
+  renderNav();
+  renderTeamView(name);
+}
+
+function renderTeamView(name) {
+  const main = document.getElementById('main');
+  const team = TEAMS[name];
+
+  if (!team.questions) {
+    main.innerHTML = `<div class="team-header"><h3>${name}</h3></div>
+      <div style="text-align:center; padding:60px; color:#aaa;">
+        <p style="font-size:40px; margin-bottom:16px;">&#128221;</p>
+        <p>평가지가 아직 준비되지 않았습니다.</p>
+      </div>`;
+    return;
+  }
+
+  const submitted = team.employees.filter(e => submissions[getKey(name, e)]).length;
+
+  let html = `<div class="team-header">
+    <div style="display:flex;align-items:baseline;">
+      <h3>${name}</h3>
+      <span class="subtitle">평가 대상 ${team.employees.length}명 · 제출 완료 ${submitted}명</span>
+    </div>
+  </div>`;
+
+  html += `<table class="emp-table">
+    <thead><tr>
+      <th style="width:50px;">No.</th>
+      <th>이름</th>
+      <th style="width:110px; text-align:center;">연봉 갱신</th>
+      <th style="width:110px;">제출하기</th>
+      <th style="width:110px;">수정하기</th>
+      <th style="width:100px; text-align:center;">제출 여부</th>
+      <th style="width:70px; text-align:center;">삭제</th>
+    </tr></thead><tbody>`;
+
+  team.employees.forEach((emp, i) => {
+    const key = getKey(name, emp);
+    const done = !!submissions[key];
+
+    html += `<tr>
+      <td style="color:#888;">${i + 1}</td>
+      <td style="font-weight:500;">${emp}</td>
+      <td style="text-align:center; font-weight:600; ${renewals[key] ? 'color:#1565C0;' : 'color:#ccc;'}">
+        ${renewals[key] ? '갱신' : '-'}
+      </td>
+      <td>
+        <button class="btn ${done ? 'btn-disabled' : 'btn-primary'}"
+          ${done ? 'disabled' : `onclick="openForm('${name}','${emp}',false)"`}>
+          제출하기
+        </button>
+      </td>
+      <td>
+        <button class="btn ${done ? 'btn-edit' : 'btn-disabled'}"
+          ${done ? `onclick="openForm('${name}','${emp}',true)"` : 'disabled'}>
+          수정하기
+        </button>
+      </td>
+      <td style="text-align:center;">
+        <span class="status-chip ${done ? 'status-done' : 'status-pending'}">
+          ${done ? '&#10003; 완료' : '미제출'}
+        </span>
+      </td>
+      <td style="text-align:center;">
+        <button class="btn btn-small" style="color:#C62828; border-color:#ddd;" onclick="deleteEmployee('${name}','${emp}')">삭제</button>
+      </td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+
+  html += `<div style="margin-top:20px; display:flex; justify-content:flex-end;">
+    <button class="btn btn-hr btn-small" onclick="promptTeamHistoryPassword('${name}')">제출 내역 조회 (HR)</button>
+  </div>`;
+
+
+  main.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════
+// RENEWAL CHECKBOX & DELETE EMPLOYEE
+// ══════════════════════════════════════════════
+
+async function deleteEmployee(teamName, empName) {
+  if (!confirm(`${empName} 님을 ${teamName} 대상자 목록에서 삭제하시겠습니까?`)) return;
+
+  try {
+    await deleteEmployeeFromServer(teamName, empName);
+
+    const team = TEAMS[teamName];
+    team.employees = team.employees.filter(e => e !== empName);
+    const key = getKey(teamName, empName);
+    delete submissions[key];
+    delete renewals[key];
+
+    renderNav();
+    renderTeamView(teamName);
+    showToast(`${empName} 님이 삭제되었습니다.`);
+  } catch (err) {
+    showToast('삭제에 실패했습니다. 다시 시도해주세요.');
+  }
+}
+
+// ══════════════════════════════════════════════
+// EVALUATION FORM MODAL
+// ══════════════════════════════════════════════
+
+function openForm(teamName, empName, isEdit) {
+  const team = TEAMS[teamName];
+  const key = getKey(teamName, empName);
+  const prev = isEdit ? submissions[key] : null;
+
+  const allQ = [...COMMON_QUESTIONS, ...team.questions];
+
+  let html = `<h3>${empName} 평가</h3>
+    <div class="modal-sub">${teamName} · ${currentPeriod.label} 인사 평가 ${isEdit ? '(수정)' : ''}</div>`;
+
+  // Common questions
+  html += `<div class="form-section">
+    <div class="form-section-title">공통 평가 항목</div>`;
+  COMMON_QUESTIONS.forEach((q, i) => {
+    const val = prev ? prev.scores[i] : null;
+    html += renderScoreQuestion(i, q, val);
+  });
+  html += `</div>`;
+
+  // Team-specific questions
+  html += `<div class="form-section">
+    <div class="form-section-title">직무 역량 평가 항목</div>`;
+  team.questions.forEach((q, i) => {
+    const idx = COMMON_QUESTIONS.length + i;
+    const val = prev ? prev.scores[idx] : null;
+    html += renderScoreQuestion(idx, q, val);
+  });
+  html += `</div>`;
+
+  // Grade
+  html += `<div class="form-section">
+    <div class="form-section-title">종합 등급</div>
+    <div style="font-size:13px; color:#555; line-height:1.7; margin-bottom:20px;">
+      · 팀원의 태도/역량에 대한 피드백을 종합 평가합니다.<br>
+      · 1)등급 설명표와 2)등급 결정 기준을 꼼꼼히 읽어보신 후, 결정해주세요.
+    </div>
+
+    <div style="font-size:13px; font-weight:700; color:#333; margin-bottom:8px;">1) 등급 설명표</div>
+    <table class="grade-criteria">
+      <thead>
+        <tr>
+          <th style="background:#fafafa; color:#333; width:100px;"></th>
+          <th>S</th><th>A</th><th>B</th><th>C</th><th>D</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>PRND way</td>
+          <td class="gc-s">귀감이 됨</td><td>충실히 지킴</td><td>대부분 지킴</td><td>종종 안 지킴</td><td>거의 안 지킴</td>
+        </tr>
+        <tr>
+          <td>영향력</td>
+          <td class="gc-s">감동을 선사</td><td>긍정적 영향</td><td>개인에서<br>그치는 수준</td><td>영향력 없음</td><td>주변 동료가<br>힘들어함</td>
+        </tr>
+        <tr>
+          <td>결과물</td>
+          <td class="gc-s"><i>Wow</i></td><td><i>Great</i></td><td><i>Good</i></td><td><i>Soso</i></td><td><i>Bad</i></td>
+        </tr>
+        <tr>
+          <td>미래 기대치</td>
+          <td class="gc-s">리더로 도약</td><td>뛰어난 실무자</td><td>좋은 동료</td><td>특별한 기대 없음</td><td>이별 고려</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="font-size:13px; font-weight:700; color:#333; margin-bottom:8px;">2) 등급 결정 기준</div>
+    <table class="grade-detail">
+      <thead>
+        <tr>
+          <th style="width:70px;">평가 점수</th><th style="width:200px;">판단 기준</th><th>부연 설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>S</td>
+          <td>매우 탁월한 역량을 발휘함</td>
+          <td style="text-align:left;">성과 : 매우 뛰어난 실력을 가지고 있다. (100% 초과)<br>태도 : 팀에 헌신하는 수준의 팔로워쉽과 성실함을 갖추고 있다.</td>
+        </tr>
+        <tr>
+          <td>A</td>
+          <td>기대하는 역량을 발휘함</td>
+          <td style="text-align:left;">성과 : 자신의 역할과 책임을 100% 수행한다.<br>태도 : 높은 수준의 팔로워쉽과 성실함을 갖추고 있다.</td>
+        </tr>
+        <tr>
+          <td>B</td>
+          <td>기준에 대부분 부합함</td>
+          <td style="text-align:left;">성과 : 자신의 역할과 책임을 90% 내외로 수행한다.<br>태도 : 적당한 수준의 팔로워쉽과 성실함을 갖추고 있다.</td>
+        </tr>
+        <tr>
+          <td>C</td>
+          <td>개선이 필요함</td>
+          <td style="text-align:left;">성과 : 자신의 역할과 책임을 70% 내외로 수행한다.<br>태도 : 팔로워쉽과 성실함이 종종 개선이 필요하다.</td>
+        </tr>
+        <tr>
+          <td>D</td>
+          <td>개선이 매우 필요함</td>
+          <td style="text-align:left;">성과 : 자신의 역할과 책임을 50% 내외로 수행한다.<br>태도 : 팔로워쉽과 성실함이 매우 부족하다.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="form-group">
+      <label class="form-label" style="font-size:14px; font-weight:700; color:#111;">피평가자에 해당하는 종합 등급을 선택해주세요.</label>
+      <div class="grade-group">`;
+  GRADES.forEach(g => {
+    html += `<button type="button" class="grade-btn ${prev && prev.grade === g ? 'selected' : ''}"
+      data-grade="${g}" onclick="selectGrade(this)">${g}</button>`;
+  });
+  html += `</div></div></div>`;
+
+  // Comment
+  html += `<div class="form-section">
+    <div class="form-section-title">한 줄 코멘트</div>
+    <div class="form-group">
+      <label class="form-label">피평가자에 대한 한 줄 코멘트를 작성해주세요.</label>
+      <textarea class="form-textarea" id="commentInput" placeholder="코멘트를 입력해주세요...">${prev ? prev.comment : ''}</textarea>
+    </div>
+  </div>`;
+
+  // Actions
+  html += `<div class="form-actions">
+    <button class="btn" onclick="closeModal()">취소</button>
+    <button class="btn btn-primary btn-submit" onclick="submitForm('${teamName}','${empName}', ${allQ.length})">${isEdit ? '수정 완료' : '제출하기'}</button>
+  </div>`;
+
+  document.getElementById('modal').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function renderScoreQuestion(idx, q, val) {
+  let html = `<div class="form-group">
+    <label class="form-label"><span class="q-num">${idx + 1}</span>${q.replace(/\n/g, '<br>')}</label>
+    <div class="score-group">`;
+  for (let s = 1; s <= 5; s++) {
+    html += `<button type="button" class="score-btn ${val === s ? 'selected' : ''}"
+      data-q="${idx}" data-score="${s}" onclick="selectScore(this)">${s}</button>`;
+  }
+  html += `</div></div>`;
+  return html;
+}
+
+function selectScore(btn) {
+  btn.parentElement.querySelectorAll('.score-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function selectGrade(btn) {
+  document.querySelectorAll('.grade-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+async function submitForm(teamName, empName, totalQ) {
+  const scores = [];
+  for (let i = 0; i < totalQ; i++) {
+    const selected = document.querySelector(`.score-btn[data-q="${i}"].selected`);
+    if (!selected) { showToast(`${i + 1}번 항목의 점수를 선택해주세요.`); return; }
+    scores.push(parseInt(selected.dataset.score));
+  }
+
+  const gradeBtn = document.querySelector('.grade-btn.selected');
+  if (!gradeBtn) { showToast('종합 등급을 선택해주세요.'); return; }
+
+  const comment = document.getElementById('commentInput').value.trim();
+  if (!comment) { showToast('한 줄 코멘트를 작성해주세요.'); return; }
+
+  // 버튼 로딩 상태
+  const submitBtn = document.querySelector('.btn-submit');
+  submitBtn.classList.add('loading');
+  submitBtn.textContent = '저장 중...';
+
+  const key = getKey(teamName, empName);
+  const payload = {
+    team: teamName,
+    employee: empName,
+    scores,
+    grade: gradeBtn.dataset.grade,
+    comment,
+    timestamp: new Date().toISOString(),
+    totalScore: scores.reduce((a, b) => a + b, 0)
+  };
+
+  try {
+    await saveSubmission(teamName, empName, payload);
+    submissions[key] = payload;
+    closeModal();
+    renderNav();
+    renderTeamView(teamName);
+    showToast(`${empName} 평가가 제출되었습니다.`);
+  } catch (err) {
+    submitBtn.classList.remove('loading');
+    submitBtn.textContent = '제출하기';
+    showToast('저장에 실패했습니다. 다시 시도해주세요.');
+  }
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ══════════════════════════════════════════════
+// PASSWORD MODAL (HR)
+// ══════════════════════════════════════════════
+
+let pendingHistoryTeam = null;
+
+function promptTeamHistoryPassword(teamName) {
+  if (hrAuthenticated) { showTeamHistory(teamName); return; }
+  pendingHistoryTeam = teamName;
+  document.getElementById('pwInput').value = '';
+  document.getElementById('pwError').style.display = 'none';
+  document.getElementById('pwOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('pwInput').focus(), 100);
+}
+
+function promptHistoryPassword() {
+  if (hrAuthenticated) { showHistory(); return; }
+  pendingHistoryTeam = null;
+  document.getElementById('pwInput').value = '';
+  document.getElementById('pwError').style.display = 'none';
+  document.getElementById('pwOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('pwInput').focus(), 100);
+}
+
+function checkPassword() {
+  const pw = document.getElementById('pwInput').value;
+  if (pw === HR_PASSWORD) {
+    hrAuthenticated = true;
+    closePwModal();
+    if (pendingHistoryTeam) {
+      showTeamHistory(pendingHistoryTeam);
+      pendingHistoryTeam = null;
+    } else {
+      showHistory();
+    }
+  } else {
+    document.getElementById('pwError').style.display = 'block';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwInput').focus();
+  }
+}
+
+function closePwModal() {
+  document.getElementById('pwOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('pwOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closePwModal();
+});
+
+// ══════════════════════════════════════════════
+// UPLOAD MODAL (HR)
+// ══════════════════════════════════════════════
+
+function openUploadModal() {
+  // Require HR password first
+  if (!hrAuthenticated) {
+    const pw = prompt('HR 비밀번호를 입력해주세요:');
+    if (pw !== HR_PASSWORD) {
+      if (pw !== null) showToast('비밀번호가 일치하지 않습니다.');
+      return;
+    }
+    hrAuthenticated = true;
+  }
+
+  const modal = document.getElementById('uploadModal');
+  modal.innerHTML = `
+    <h3>전체 대상자 명단 업로드</h3>
+    <p>CSV 또는 텍스트 파일을 업로드해주세요.<br>
+    형식: 각 줄에 <strong>팀명, 이름, 갱신여부</strong> (쉼표 구분)<br>
+    갱신 대상자는 세 번째에 <strong>갱신</strong>을 입력<br>
+    예시: 관제팀(BO), 홍길동, 갱신<br>
+    예시: 관제팀(BO), 김철수</p>
+
+    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()"
+      ondragover="event.preventDefault(); this.classList.add('dragover')"
+      ondragleave="this.classList.remove('dragover')"
+      ondrop="event.preventDefault(); this.classList.remove('dragover'); handleFileDrop(event)">
+      <p style="color:#888; font-size:14px;">파일을 드래그하거나 클릭하여 업로드</p>
+      <p style="color:#bbb; font-size:12px; margin-top:4px;">.csv, .txt 파일</p>
+    </div>
+    <input type="file" id="fileInput" accept=".csv,.txt" style="display:none" onchange="handleFileSelect(event)">
+
+    <div id="uploadPreview"></div>
+
+    <div style="margin-top:16px; padding-top:16px; border-top:1px solid #eee;">
+      <p style="font-size:12px; color:#888; margin-bottom:12px;">또는 아래에 직접 입력할 수도 있습니다:</p>
+      <textarea class="form-textarea" id="manualInput" rows="6" placeholder="팀명, 이름, 갱신여부&#10;관제팀(BO), 홍길동, 갱신&#10;관제팀(BO), 김철수&#10;디테일링팀, 이영희, 갱신"></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn" onclick="closeUploadModal()">취소</button>
+      <button class="btn btn-primary" onclick="applyUpload()">적용하기</button>
+    </div>`;
+
+  document.getElementById('uploadOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeUploadModal() {
+  document.getElementById('uploadOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('uploadOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeUploadModal();
+});
+
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (file) readUploadFile(file);
+}
+
+function handleFileDrop(event) {
+  const file = event.dataTransfer.files[0];
+  if (file) readUploadFile(file);
+}
+
+function readUploadFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('manualInput').value = e.target.result;
+    previewUpload(e.target.result);
+  };
+  reader.readAsText(file);
+}
+
+function previewUpload(text) {
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  const parsed = {};
+
+  lines.forEach(line => {
+    const parts = line.split(',').map(s => s.trim());
+    if (parts.length >= 2) {
+      const team = parts[0];
+      const name = parts[1];
+      const isRenewal = parts.length >= 3 && parts[2] === '갱신';
+      if (!parsed[team]) parsed[team] = [];
+      parsed[team].push({ name, renewal: isRenewal });
+    }
+  });
+
+  let html = '<div class="upload-preview"><table>';
+  html += '<thead><tr><th>팀</th><th>인원</th><th>이름</th><th>갱신</th></tr></thead><tbody>';
+  Object.entries(parsed).forEach(([team, members]) => {
+    const exists = !!TEAMS[team];
+    const renewalCount = members.filter(m => m.renewal).length;
+    html += `<tr>
+      <td style="${exists ? '' : 'color:#C62828;'}">${team} ${exists ? '' : '(미등록 팀)'}</td>
+      <td>${members.length}명</td>
+      <td>${members.map(m => m.name).join(', ')}</td>
+      <td>${renewalCount}명</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+
+  document.getElementById('uploadPreview').innerHTML = html;
+}
+
+async function applyUpload() {
+  const text = document.getElementById('manualInput').value.trim();
+  if (!text) { showToast('명단을 입력해주세요.'); return; }
+
+  const lines = text.split('\n').filter(l => l.trim());
+  const serverPayload = [];
+  const parsed = {};
+  const renewalMap = {};
+  let count = 0;
+
+  lines.forEach(line => {
+    const parts = line.split(',').map(s => s.trim());
+    if (parts.length >= 2) {
+      const team = parts[0];
+      const name = parts[1];
+      const isRenewal = parts.length >= 3 && parts[2] === '갱신';
+      if (TEAMS[team]) {
+        if (!parsed[team]) parsed[team] = [];
+        parsed[team].push(name);
+        serverPayload.push({ team, employee: name, renewal: isRenewal });
+        const key = getKey(team, name);
+        if (isRenewal) renewalMap[key] = true;
+        count++;
+      }
+    }
+  });
+
+  if (count === 0) { showToast('유효한 데이터가 없습니다. 팀명을 확인해주세요.'); return; }
+
+  // 버튼 로딩
+  const applyBtn = document.querySelector('#uploadModal .btn-primary');
+  if (applyBtn) { applyBtn.classList.add('loading'); applyBtn.textContent = '저장 중...'; }
+
+  try {
+    await saveEmployeesToServer(serverPayload);
+
+    Object.entries(parsed).forEach(([team, names]) => {
+      TEAMS[team].employees.forEach(emp => {
+        delete renewals[getKey(team, emp)];
+      });
+      TEAMS[team].employees = names;
+    });
+    Object.assign(renewals, renewalMap);
+
+    closeUploadModal();
+    renderNav();
+    if (currentTeam && TEAMS[currentTeam]) renderTeamView(currentTeam);
+    showToast(`${count}명의 대상자가 ${Object.keys(parsed).length}개 팀에 등록되었습니다.`);
+  } catch (err) {
+    if (applyBtn) { applyBtn.classList.remove('loading'); applyBtn.textContent = '적용하기'; }
+    showToast('저장에 실패했습니다. 다시 시도해주세요.');
+  }
+}
+
+// ══════════════════════════════════════════════
+// HISTORY VIEW
+// ══════════════════════════════════════════════
+
+function showHistory() {
+  currentTeam = null;
+  renderNav();
+  renderHistoryView();
+}
+
+function showTeamHistory(teamName) {
+  renderTeamHistoryView(teamName);
+}
+
+function renderTeamHistoryView(teamName) {
+  const main = document.getElementById('main');
+  const teamSubs = Object.values(submissions)
+    .filter(s => s.team === teamName)
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  let html = `<button class="back-btn" onclick="selectTeam('${teamName}')">&#8592; ${teamName} 목록으로</button>`;
+
+  html += `<div class="team-header">
+    <div style="display:flex;align-items:baseline;">
+      <h3>${teamName} 제출 내역</h3>
+      <span class="subtitle">총 ${teamSubs.length}건</span>
+    </div>
+  </div>`;
+
+  html += `<div class="filter-bar">
+    <select id="gradeFilter" onchange="filterTeamHistory()">
+      <option value="">전체 등급</option>
+      ${GRADES.map(g => `<option value="${g}">${g}</option>`).join('')}
+    </select>
+  </div>`;
+
+  if (teamSubs.length === 0) {
+    html += `<div class="history-empty">아직 제출된 평가가 없습니다.</div>`;
+  } else {
+    teamSubs.forEach(sub => { html += renderHistoryCard(sub); });
+  }
+
+  main.innerHTML = html;
+}
+
+function filterTeamHistory() {
+  const gradeVal = document.getElementById('gradeFilter').value;
+  document.querySelectorAll('.history-card').forEach(card => {
+    card.style.display = (!gradeVal || card.dataset.grade === gradeVal) ? '' : 'none';
+  });
+}
+
+function renderHistoryView() {
+  const main = document.getElementById('main');
+  const allSubs = Object.values(submissions).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  const teams = [...new Set(Object.keys(TEAMS))];
+
+  let html = `<div class="team-header">
+    <h3>제출한 내역</h3>
+    <span class="subtitle">총 ${allSubs.length}건</span>
+  </div>`;
+
+  html += `<div class="filter-bar">
+    <select id="historyFilter" onchange="filterHistory()">
+      <option value="">전체 팀</option>
+      ${teams.map(t => `<option value="${t}">${t}</option>`).join('')}
+    </select>
+    <select id="gradeFilter" onchange="filterHistory()">
+      <option value="">전체 등급</option>
+      ${GRADES.map(g => `<option value="${g}">${g}</option>`).join('')}
+    </select>
+  </div>`;
+
+  html += `<div id="historyList">`;
+  if (allSubs.length === 0) {
+    html += `<div class="history-empty">아직 제출된 평가가 없습니다.</div>`;
+  } else {
+    allSubs.forEach(sub => { html += renderHistoryCard(sub); });
+  }
+  html += `</div>`;
+
+  main.innerHTML = html;
+}
+
+function renderHistoryCard(sub) {
+  const team = TEAMS[sub.team];
+  const allLabels = [...COMMON_LABELS];
+  if (team && team.questions) {
+    team.questions.forEach((_, i) => allLabels.push(`직무${i + 1}`));
+  }
+
+  const ts = new Date(sub.timestamp);
+  const timeStr = `${ts.getFullYear()}-${String(ts.getMonth()+1).padStart(2,'0')}-${String(ts.getDate()).padStart(2,'0')} ${String(ts.getHours()).padStart(2,'0')}:${String(ts.getMinutes()).padStart(2,'0')}`;
+
+  let html = `<div class="history-card" data-team="${sub.team}" data-grade="${sub.grade}">
+    <div class="hc-header">
+      <div>
+        <span class="hc-name">${sub.employee}</span>
+        <span class="hc-team" style="margin-left:8px;">${sub.team}</span>
+      </div>
+      <span class="hc-grade grade-${sub.grade}">${sub.grade}</span>
+    </div>
+    <div class="hc-scores">`;
+  sub.scores.forEach((s, i) => {
+    if (i < allLabels.length) {
+      html += `<span class="hc-score-item">${allLabels[i]} <span>${s}</span></span>`;
+    }
+  });
+  html += `</div>
+    <div style="font-size:12px; color:#888;">총점: <strong style="color:#222;">${sub.totalScore}점</strong> / ${sub.scores.length * 5}점</div>
+    <div class="hc-comment">${sub.comment}</div>
+    <div class="hc-time">제출: ${timeStr}</div>
+  </div>`;
+  return html;
+}
+
+function filterHistory() {
+  const teamVal = document.getElementById('historyFilter').value;
+  const gradeVal = document.getElementById('gradeFilter').value;
+  document.querySelectorAll('.history-card').forEach(card => {
+    const matchTeam = !teamVal || card.dataset.team === teamVal;
+    const matchGrade = !gradeVal || card.dataset.grade === gradeVal;
+    card.style.display = (matchTeam && matchGrade) ? '' : 'none';
+  });
+}
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ══════════════════════════════════════════════
+// PERIOD SELECTOR
+// ══════════════════════════════════════════════
+
+function renderPeriodLabel() {
+  document.getElementById('periodLabel').textContent = currentPeriod.label;
+}
+
+function togglePeriodDropdown() {
+  const dd = document.getElementById('periodDropdown');
+  const isOpen = dd.classList.contains('show');
+  dd.classList.toggle('show');
+
+  if (!isOpen) {
+    let html = '';
+    PERIODS.forEach(p => {
+      html += `<button class="period-item ${p.id === currentPeriod.id ? 'active' : ''}" onclick="switchPeriod('${p.id}')">${p.label}</button>`;
+    });
+    dd.innerHTML = html;
+  }
+}
+
+async function switchPeriod(periodId) {
+  const period = PERIODS.find(p => p.id === periodId);
+  if (!period || period.id === currentPeriod.id) {
+    document.getElementById('periodDropdown').classList.remove('show');
+    return;
+  }
+
+  currentPeriod = period;
+  renderPeriodLabel();
+  document.getElementById('periodDropdown').classList.remove('show');
+  currentTeam = null;
+
+  await loadPeriodData();
+  renderNav();
+  document.getElementById('main').innerHTML = '<div class="main-empty">왼쪽에서 팀을 선택해주세요</div>';
+  showToast(`${currentPeriod.label} 평가로 전환되었습니다.`);
+}
+
+// 드롭다운 외부 클릭 시 닫기
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.period-selector')) {
+    document.getElementById('periodDropdown').classList.remove('show');
+  }
+});
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+
+(async function init() {
+  renderPeriodLabel();
+  await loadPeriodData();
+  renderNav();
+})();
+</script>
+</body>
+</html>
